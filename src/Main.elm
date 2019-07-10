@@ -3,6 +3,7 @@ module Main exposing (Model, Msg(..), init, main, update, view)
 import Browser
 import Html exposing (Html, div, h1, img, text)
 import Html.Attributes exposing (class, src)
+import Html.Events exposing (onClick)
 
 
 
@@ -10,12 +11,14 @@ import Html.Attributes exposing (class, src)
 
 
 type alias Model =
-    {}
+    { board : List Int
+    , selectedSquare : Maybe Int
+    }
 
 
 init : ( Model, Cmd Msg )
 init =
-    ( {}, Cmd.none )
+    ( { board = List.range 0 143, selectedSquare = Nothing }, Cmd.none )
 
 
 
@@ -23,12 +26,14 @@ init =
 
 
 type Msg
-    = NoOp
+    = SquareClicked Int
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    ( model, Cmd.none )
+    case msg of
+        SquareClicked squareNumber ->
+            ( { model | selectedSquare = Just squareNumber }, Cmd.none )
 
 
 
@@ -37,16 +42,27 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    div [ class "board" ] (viewBoardSquares 4 4)
+    div [ class "board" ] (viewBoardSquares model.board)
 
 
-viewBoardSquares : Int -> Int -> List (Html Msg)
-viewBoardSquares cols rows =
-    List.range 0 ((cols * rows) - 1)
+viewBoardSquares : List Int -> List (Html Msg)
+viewBoardSquares board =
+    let
+        cols =
+            round (sqrt (toFloat (List.length board)))
+
+        rows =
+            round (sqrt (toFloat (List.length board)))
+    in
+    board
         |> List.map
-            (\v ->
-                div [ class "flex flex-col justify-center h-24 border border-black border-solid text-center" ]
-                    [ text (boardNumberToSquareNumber cols v ++ boardNumberToSquareLetter cols v) ]
+            (\squareNumber ->
+                div
+                    [ class "flex flex-col justify-center h-24 border border-black border-solid text-center hover:bg-gray-400"
+                    , onClick (SquareClicked squareNumber)
+                    ]
+                    [ text (boardNumberToSquareNumber cols squareNumber ++ boardNumberToSquareLetter cols squareNumber)
+                    ]
             )
 
 
