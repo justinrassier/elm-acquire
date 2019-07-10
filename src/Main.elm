@@ -57,7 +57,7 @@ boardNumberToSquareNumber cols value =
 
 boardNumberToSquareLetter : Int -> Int -> String
 boardNumberToSquareLetter cols value =
-    String.fromChar (Char.fromCode (modBy cols value + 65))
+    String.fromChar (Char.fromCode ((value // cols) + 65))
 
 
 
