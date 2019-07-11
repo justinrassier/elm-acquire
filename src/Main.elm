@@ -1,6 +1,7 @@
 module Main exposing (Model, Msg(..), init, main, update, view)
 
 import Browser
+import Dict exposing (Dict)
 import Html exposing (Html, button, div, h1, img, span, text)
 import Html.Attributes exposing (class, src)
 import Html.Events exposing (onClick)
@@ -12,7 +13,7 @@ import Html.Events exposing (onClick)
 
 type alias Model =
     { selectedSquare : Maybe Int
-    , board : List BoardSquare
+    , board : Dict Int BoardSquare
     }
 
 
@@ -33,10 +34,11 @@ init =
     ( { board = initBoard, selectedSquare = Nothing }, Cmd.none )
 
 
-initBoard : List BoardSquare
+initBoard : Dict Int BoardSquare
 initBoard =
     List.range 0 143
-        |> List.map (\v -> { id = v, state = Empty })
+        |> List.map (\v -> ( v, { id = v, state = Empty } ))
+        |> Dict.fromList
 
 
 
@@ -56,7 +58,16 @@ update msg model =
             ( { model | selectedSquare = Just squareId }, Cmd.none )
 
         LayTile squareId ->
-            Debug.todo "update square with 'Tiled' state" ( model, Cmd.none )
+            let
+                updatedBoard =
+                    Dict.update
+                        squareId
+                        (\maybeSquare ->
+                            Maybe.andThen (\square -> Just { square | state = Tiled }) maybeSquare
+                        )
+                        model.board
+            in
+            ( { model | board = updatedBoard, selectedSquare = Nothing }, Cmd.none )
 
         CancelTile ->
             ( { model | selectedSquare = Nothing }, Cmd.none )
@@ -71,20 +82,21 @@ view model =
     div [ class "board" ] (viewBoardSquares model.board model.selectedSquare)
 
 
-viewBoardSquares : List BoardSquare -> Maybe Int -> List (Html Msg)
+viewBoardSquares : Dict Int BoardSquare -> Maybe Int -> List (Html Msg)
 viewBoardSquares board selectedSquare =
     let
         cols : Int
         cols =
-            round (sqrt (toFloat (List.length board)))
+            round (sqrt (toFloat (Dict.size board)))
 
         rows : Int
         rows =
-            round (sqrt (toFloat (List.length board)))
+            round (sqrt (toFloat (Dict.size board)))
     in
-    board
+    -- Dict.foldr toHtml [] board
+    Dict.toList board
         |> List.map
-            (\square ->
+            (\( squareId, square ) ->
                 let
                     baseClassList =
                         "cursor-pointer flex flex-col justify-center h-24 border border-black border-solid text-center hover:bg-gray-400"
@@ -110,7 +122,11 @@ viewBoardSquares board selectedSquare =
                         [ class baseClassList
                         , onClick (SquareClicked square.id)
                         ]
-                        [ text (boardNumberToSquareNumber cols square.id ++ boardNumberToSquareLetter cols square.id)
+                        [ if square.state == Tiled then
+                            text "TILED"
+
+                          else
+                            text (boardNumberToSquareNumber cols square.id ++ boardNumberToSquareLetter cols square.id)
                         ]
             )
 
